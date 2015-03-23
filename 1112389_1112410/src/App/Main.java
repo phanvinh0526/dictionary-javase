@@ -6,6 +6,8 @@
 package App;
 
 import Frame.FrameDictionary;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  *
@@ -16,8 +18,18 @@ public class Main  {
     public static void main (String[] args){
         
        FrameDictionary fd = new FrameDictionary();
-       fd.setVisible(true);
        
        
+    }
+    
+    static private String getKeyOfSortedMap(Map<String,String> list, int index){
+        Iterator<String> iter = list.keySet().iterator();
+        while(iter.hasNext()){
+            String key = iter.next();
+            if(index == 0)
+                return key;
+            index--;
+        }
+        return null;
     }
 }

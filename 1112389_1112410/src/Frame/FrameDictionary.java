@@ -5,20 +5,156 @@
  */
 package Frame;
 
+import App.ModelDictionary;
+import Model.Updateable;
+import java.awt.Dimension;
+import java.io.File;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.DefaultListModel;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.ListModel;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 /**
  *
  * @author vinh
  */
-public class FrameDictionary extends javax.swing.JFrame {
+public class FrameDictionary extends javax.swing.JFrame implements Updateable{
 
+    //ModelDictionary modelDictionary;
+    ModelDictionary modelDict = new ModelDictionary();
+    
+    //Frame loading
+    JFrame frameLoading = new JFrame("Frame loading ...");
+    JLabel lblLoadingPercent = new JLabel("    (0%) Đang load dữ liệu, vui lòng chờ ... ");
+    
+    SortedMap<String,String> listEnViSorted = new TreeMap<String,String>();
+    SortedMap<String,String> listViEnSorted = new TreeMap<String,String>();
+    
+    DefaultListModel<String> modelEnVi = new DefaultListModel<String>();
+    DefaultListModel<String> modelViEn = new DefaultListModel<String>();
+    
     /**
      * Creates new form FrameDictionary
      */
     public FrameDictionary() {
         initComponents();
         this.setResizable(false);
+        
+        /*  ---Command Lines---   */
+        //Loading Frame
+        initFrameLoading();   
+        
+        //Add radio to groupp
+        grpDictType.add(rdoAnhViet);
+        grpDictType.add(rdoVietAnh);
+        //Disable edit word mean
+        txtWordMean.setEditable(false);
+        //Load data
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+               load("src/Resources/Viet_Anh.xml", 0, 50, listViEnSorted, modelViEn);
+               load("src/Resources/Anh_Viet.xml", 50, 50, listEnViSorted, modelEnVi);
+               lstWords.setModel(modelEnVi);
+               rdoAnhViet.setSelected(true);
+               lstWords.ensureIndexIsVisible(50);
+               lstWords.ensureIndexIsVisible(0);
+            }
+        }).start();
     }
 
+    /*  ---Functions---   */
+    public void load(String fileName, int startPercent, int maxPercent, SortedMap<String,String> listMap, DefaultListModel<String> model){
+        File file = new File(fileName);
+        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder documentBuilder;
+        Document document ;
+        try {
+            documentBuilder = documentBuilderFactory.newDocumentBuilder();
+            document = documentBuilder.parse(file);
+            NodeList list = document.getElementsByTagName("record");
+            //list.item(index)
+            int size = list.getLength();
+            for(int i = 0; i < list.getLength(); i++){
+                Node node = list.item(i);
+                Element ele = (Element)node;
+                String word = ele.getElementsByTagName("word").item(0).getTextContent();
+                String mean = ele.getElementsByTagName("meaning").item(0).getTextContent();
+                listMap.put(word, mean);
+                model.addElement(word);
+                if(i%20 == 0 || i == size - 1){
+                    int tmp = i + 1;
+                    float percent = startPercent + (float)tmp/size*100/(100/maxPercent);
+                    //if(i == size - 2)
+                    //    percent = 50f;
+                    //DecimalFormat df = new DecimalFormat("###.##");
+                    updatePercentLoaded(percent);
+                }
+            }
+            
+//            Iterator<String> iter = listSorted.keySet().iterator();
+//            while(iter.hasNext()){
+//                String key = iter.next();
+//                listLinked.add(key);
+//            }
+        } catch (Exception ex) {
+            Logger.getLogger(ModelDictionary.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    private void initFrameLoading(){
+        Dimension windowSize =  java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+        
+        frameLoading.setSize(new Dimension(300, 70));
+        frameLoading.setAlwaysOnTop(true);
+        frameLoading.setLocation(windowSize.width/2 - frameLoading.getWidth()/2, windowSize.height/2 - frameLoading.getHeight()/2 - 100);
+        frameLoading.setUndecorated(true); // Remove title bar
+        frameLoading.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frameLoading.getContentPane().add(lblLoadingPercent);
+        
+        //frame.pack();
+        frameLoading.setVisible(true);
+    }
+    public DefaultListModel getDictModel(){
+        if(isEnViSelected())
+            return modelEnVi;
+        else 
+            return modelViEn;
+    }
+    public SortedMap<String,String> getDict(){
+        if(isEnViSelected())
+            return listEnViSorted;
+        else 
+            return listViEnSorted;
+    }
+    public void search(){
+        int indexSelected = lstWords.getSelectedIndex();
+        
+        //Kiểm tra có chọn 1 từ hay không
+        if(lstWords.getSelectedIndex() < 0)
+            return;
+        DefaultListModel model = getDictModel();
+        
+        String word = model.get(indexSelected).toString();
+        txtWordMean.setText(getDict().get(word));
+        
+        
+    }
+    
+    public boolean isEnViSelected(){
+        return grpDictType.isSelected(rdoAnhViet.getModel());
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -28,7 +164,8 @@ public class FrameDictionary extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        buttonGroup1 = new javax.swing.ButtonGroup();
+        grpDictType = new javax.swing.ButtonGroup();
+        grpDictType1 = new javax.swing.ButtonGroup();
         jPanel1 = new javax.swing.JPanel();
         jpMenu = new javax.swing.JPanel();
         btSearch = new javax.swing.JButton();
@@ -71,12 +208,14 @@ public class FrameDictionary extends javax.swing.JFrame {
         jLabel8 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         jLabel9 = new javax.swing.JLabel();
-        jTextField3 = new javax.swing.JTextField();
-        jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
+        jtNewWord = new javax.swing.JTextField();
+        btnClear = new javax.swing.JButton();
+        btnInsert = new javax.swing.JButton();
         jLabel10 = new javax.swing.JLabel();
         jScrollPane6 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
+        jaMeaning = new javax.swing.JTextArea();
+        rdoVietAnh1 = new javax.swing.JRadioButton();
+        rdoAnhViet1 = new javax.swing.JRadioButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -188,8 +327,8 @@ public class FrameDictionary extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane2)
-                .addGap(7, 7, 7))
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 443, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(29, Short.MAX_VALUE))
         );
 
         jpSearch.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(211, 46, -1, 518));
@@ -197,21 +336,36 @@ public class FrameDictionary extends javax.swing.JFrame {
         jPanel4.setBackground(new java.awt.Color(0, 0, 51));
 
         rdoAnhViet.setBackground(new java.awt.Color(0, 0, 51));
-        buttonGroup1.add(rdoAnhViet);
+        grpDictType.add(rdoAnhViet);
         rdoAnhViet.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         rdoAnhViet.setForeground(new java.awt.Color(255, 255, 255));
         rdoAnhViet.setText("Anh-Việt");
+        rdoAnhViet.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                rdoAnhVietStateChanged(evt);
+            }
+        });
         rdoAnhViet.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 rdoAnhVietItemStateChanged(evt);
             }
         });
+        rdoAnhViet.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rdoAnhVietActionPerformed(evt);
+            }
+        });
 
         rdoVietAnh.setBackground(new java.awt.Color(0, 0, 51));
-        buttonGroup1.add(rdoVietAnh);
+        grpDictType.add(rdoVietAnh);
         rdoVietAnh.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         rdoVietAnh.setForeground(new java.awt.Color(255, 255, 255));
         rdoVietAnh.setText("Việt-Anh");
+        rdoVietAnh.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                rdoVietAnhStateChanged(evt);
+            }
+        });
         rdoVietAnh.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 rdoVietAnhItemStateChanged(evt);
@@ -262,8 +416,8 @@ public class FrameDictionary extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 439, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 422, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(28, Short.MAX_VALUE))
         );
 
         jpSearch.add(jPanel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 46, -1, -1));
@@ -310,7 +464,6 @@ public class FrameDictionary extends javax.swing.JFrame {
 
         jButton1.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         jButton1.setText("ADD");
-        jButton1.setActionCommand("ADD");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
@@ -336,7 +489,7 @@ public class FrameDictionary extends javax.swing.JFrame {
             .addGroup(jpFavouriteLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jpFavouriteLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 566, Short.MAX_VALUE)
+                    .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 655, Short.MAX_VALUE)
                     .addGroup(jpFavouriteLayout.createSequentialGroup()
                         .addComponent(jLabel5)
                         .addGap(0, 0, Short.MAX_VALUE)))
@@ -369,7 +522,7 @@ public class FrameDictionary extends javax.swing.JFrame {
                     .addComponent(jLabel6)
                     .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButton1))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
                 .addGroup(jpFavouriteLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel7)
                     .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -403,7 +556,7 @@ public class FrameDictionary extends javax.swing.JFrame {
                 .addGroup(jpHistoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel4))
-                .addContainerGap(384, Short.MAX_VALUE))
+                .addContainerGap(473, Short.MAX_VALUE))
         );
         jpHistoryLayout.setVerticalGroup(
             jpHistoryLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -411,7 +564,7 @@ public class FrameDictionary extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel4)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 468, Short.MAX_VALUE)
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 480, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -458,7 +611,7 @@ public class FrameDictionary extends javax.swing.JFrame {
             .addGroup(jpLastWordLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jpLastWordLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 566, Short.MAX_VALUE)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 655, Short.MAX_VALUE)
                     .addGroup(jpLastWordLayout.createSequentialGroup()
                         .addComponent(jLabel3)
                         .addGap(0, 0, Short.MAX_VALUE)))
@@ -470,7 +623,7 @@ public class FrameDictionary extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel3)
                 .addGap(29, 29, 29)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 450, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 462, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -482,72 +635,120 @@ public class FrameDictionary extends javax.swing.JFrame {
         jLabel8.setForeground(new java.awt.Color(255, 255, 255));
         jLabel8.setText("Insert new words");
 
-        jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Definition", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("SansSerif", 1, 14))); // NOI18N
+        jPanel2.setBackground(new java.awt.Color(0, 0, 51));
+        jPanel2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(255, 255, 255), 2, true));
 
         jLabel9.setFont(new java.awt.Font("SansSerif", 1, 18)); // NOI18N
-        jLabel9.setForeground(new java.awt.Color(51, 0, 0));
+        jLabel9.setForeground(new java.awt.Color(255, 255, 255));
         jLabel9.setText("New Word");
 
-        jButton3.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
-        jButton3.setText("Clear");
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        btnClear.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        btnClear.setText("Clear");
+        btnClear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                btnClearActionPerformed(evt);
             }
         });
 
-        jButton4.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
-        jButton4.setText("Insert");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
+        btnInsert.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        btnInsert.setText("Insert");
+        btnInsert.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
+                btnInsertActionPerformed(evt);
             }
         });
 
         jLabel10.setFont(new java.awt.Font("SansSerif", 1, 18)); // NOI18N
-        jLabel10.setForeground(new java.awt.Color(51, 0, 0));
+        jLabel10.setForeground(new java.awt.Color(255, 255, 255));
         jLabel10.setText("Meaning");
 
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jScrollPane6.setViewportView(jTextArea1);
+        jaMeaning.setColumns(20);
+        jaMeaning.setRows(5);
+        jScrollPane6.setViewportView(jaMeaning);
+
+        rdoVietAnh1.setBackground(new java.awt.Color(0, 0, 51));
+        grpDictType1.add(rdoVietAnh1);
+        rdoVietAnh1.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        rdoVietAnh1.setForeground(new java.awt.Color(255, 255, 255));
+        rdoVietAnh1.setText("Việt-Anh");
+        rdoVietAnh1.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                rdoVietAnh1StateChanged(evt);
+            }
+        });
+        rdoVietAnh1.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                rdoVietAnh1ItemStateChanged(evt);
+            }
+        });
+
+        rdoAnhViet1.setBackground(new java.awt.Color(0, 0, 51));
+        grpDictType1.add(rdoAnhViet1);
+        rdoAnhViet1.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        rdoAnhViet1.setForeground(new java.awt.Color(255, 255, 255));
+        rdoAnhViet1.setText("Anh-Việt");
+        rdoAnhViet1.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                rdoAnhViet1StateChanged(evt);
+            }
+        });
+        rdoAnhViet1.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                rdoAnhViet1ItemStateChanged(evt);
+            }
+        });
+        rdoAnhViet1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rdoAnhViet1ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addGap(62, 62, 62)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel9)
-                    .addComponent(jLabel10))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnInsert, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jTextField3)
-                    .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE))
-                .addContainerGap(74, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnClear, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(68, 68, 68))
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(72, 72, 72)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(rdoAnhViet1, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(rdoVietAnh1))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel9)
+                            .addComponent(jLabel10))
+                        .addGap(29, 29, 29)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jtNewWord, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(84, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(30, 30, 30)
+                .addContainerGap(17, Short.MAX_VALUE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(rdoVietAnh1)
+                    .addComponent(rdoAnhViet1))
+                .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel9)
-                    .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jtNewWord, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(35, 35, 35)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel10)
                     .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 46, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(btnClear, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnInsert, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
 
@@ -563,7 +764,7 @@ public class FrameDictionary extends javax.swing.JFrame {
                     .addGroup(jpInsertLayout.createSequentialGroup()
                         .addGap(45, 45, 45)
                         .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(52, Short.MAX_VALUE))
+                .addContainerGap(51, Short.MAX_VALUE))
         );
         jpInsertLayout.setVerticalGroup(
             jpInsertLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -572,7 +773,7 @@ public class FrameDictionary extends javax.swing.JFrame {
                 .addComponent(jLabel8)
                 .addGap(61, 61, 61)
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(123, Short.MAX_VALUE))
+                .addContainerGap(159, Short.MAX_VALUE))
         );
 
         jpMain.add(jpInsert, "card3");
@@ -593,8 +794,10 @@ public class FrameDictionary extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jpMain, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jpMenu, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jpMain, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jpMenu, javax.swing.GroupLayout.PREFERRED_SIZE, 537, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
 
@@ -637,39 +840,39 @@ public class FrameDictionary extends javax.swing.JFrame {
     }//GEN-LAST:event_btFavouriteActionPerformed
 
     private void rdoVietAnhItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_rdoVietAnhItemStateChanged
-//        lstWords.setModel(modelViEn);
-//        lstWords.ensureIndexIsVisible(50);
-//        lstWords.ensureIndexIsVisible(0);
-//        search();
+        lstWords.setModel(modelViEn);
+        lstWords.ensureIndexIsVisible(50);
+        lstWords.ensureIndexIsVisible(0);
+        search();
     }//GEN-LAST:event_rdoVietAnhItemStateChanged
 
     private void rdoAnhVietItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_rdoAnhVietItemStateChanged
-//        lstWords.setModel(modelEnVi);
-//        lstWords.ensureIndexIsVisible(50);
-//        lstWords.ensureIndexIsVisible(0);
-//        search();
+        lstWords.setModel(modelEnVi);
+        lstWords.ensureIndexIsVisible(50);
+        lstWords.ensureIndexIsVisible(0);
+        search();
     }//GEN-LAST:event_rdoAnhVietItemStateChanged
 
     private void txtSearchKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtSearchKeyReleased
-//        if(evt.getKeyCode() == 10){
-//            search();
-//            return;
-//        }
-//
-//        String word = txtSearch.getText().trim();
-//        ListModel model = lstWords.getModel();
-//        for(int i = 0; i < model.getSize(); i++){
-//            if(model.getElementAt(i).toString().startsWith(word)){
-//                lstWords.setSelectedIndex(i);
-//                lstWords.ensureIndexIsVisible(i);
-//                return;
-//            }
-//        }
+        if(evt.getKeyCode() == 10){
+            search();
+            return;
+        }
+
+        String word = txtSearch.getText().trim();
+        ListModel model = lstWords.getModel();
+        for(int i = 0; i < model.getSize(); i++){
+            if(model.getElementAt(i).toString().startsWith(word)){
+                lstWords.setSelectedIndex(i);
+                lstWords.ensureIndexIsVisible(i);
+                return;
+            }
+        }
 
     }//GEN-LAST:event_txtSearchKeyReleased
 
     private void lstWordsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lstWordsMouseClicked
-//        search();
+        search();
     }//GEN-LAST:event_lstWordsMouseClicked
 
     private void btLastWordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btLastWordActionPerformed
@@ -702,13 +905,58 @@ public class FrameDictionary extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton2ActionPerformed
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+    private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton3ActionPerformed
+        jtNewWord.setText("");
+        jaMeaning.setText("");
+    }//GEN-LAST:event_btnClearActionPerformed
 
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+    private void btnInsertActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInsertActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jButton4ActionPerformed
+        Integer flag = JOptionPane.showConfirmDialog(this, 
+                "Do you wanna insert a new word into your dictionary?", 
+                "Inserting Confirm", JOptionPane.YES_NO_OPTION);
+        if(flag.equals(1)){
+            if(grpDictType1.isSelected(rdoAnhViet1.getModel())){
+                modelDict.insertAnhVietVoca(jtNewWord.getText(), jaMeaning.getText().toString());
+                
+            }
+            else{
+                modelDict.insertVietAnhVoca(jtNewWord.getText(), jaMeaning.getText().toString());
+                
+            }
+        }
+    }//GEN-LAST:event_btnInsertActionPerformed
+
+    private void rdoAnhVietActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rdoAnhVietActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_rdoAnhVietActionPerformed
+
+    private void rdoAnhVietStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_rdoAnhVietStateChanged
+    }//GEN-LAST:event_rdoAnhVietStateChanged
+
+    private void rdoVietAnhStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_rdoVietAnhStateChanged
+    }//GEN-LAST:event_rdoVietAnhStateChanged
+
+    private void rdoVietAnh1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_rdoVietAnh1StateChanged
+        // TODO add your handling code here:
+    }//GEN-LAST:event_rdoVietAnh1StateChanged
+
+    private void rdoVietAnh1ItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_rdoVietAnh1ItemStateChanged
+        // TODO add your handling code here:
+    }//GEN-LAST:event_rdoVietAnh1ItemStateChanged
+
+    private void rdoAnhViet1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_rdoAnhViet1StateChanged
+        // TODO add your handling code here:
+    }//GEN-LAST:event_rdoAnhViet1StateChanged
+
+    private void rdoAnhViet1ItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_rdoAnhViet1ItemStateChanged
+        // TODO add your handling code here:
+    }//GEN-LAST:event_rdoAnhViet1ItemStateChanged
+
+    private void rdoAnhViet1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rdoAnhViet1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_rdoAnhViet1ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -751,11 +999,12 @@ public class FrameDictionary extends javax.swing.JFrame {
     private javax.swing.JButton btInsert;
     private javax.swing.JButton btLastWord;
     private javax.swing.JButton btSearch;
-    private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JButton btnClear;
+    private javax.swing.JButton btnInsert;
+    private javax.swing.ButtonGroup grpDictType;
+    private javax.swing.ButtonGroup grpDictType1;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel2;
@@ -779,10 +1028,9 @@ public class FrameDictionary extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JTable jTable1;
     private javax.swing.JTable jTable2;
-    private javax.swing.JTextArea jTextArea1;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
-    private javax.swing.JTextField jTextField3;
+    private javax.swing.JTextArea jaMeaning;
     private javax.swing.JPanel jpFavourite;
     private javax.swing.JPanel jpHistory;
     private javax.swing.JPanel jpInsert;
@@ -790,10 +1038,29 @@ public class FrameDictionary extends javax.swing.JFrame {
     private javax.swing.JPanel jpMain;
     private javax.swing.JPanel jpMenu;
     private javax.swing.JPanel jpSearch;
+    private javax.swing.JTextField jtNewWord;
     private javax.swing.JList lstWords;
     private javax.swing.JRadioButton rdoAnhViet;
+    private javax.swing.JRadioButton rdoAnhViet1;
     private javax.swing.JRadioButton rdoVietAnh;
+    private javax.swing.JRadioButton rdoVietAnh1;
     private javax.swing.JTextField txtSearch;
     private javax.swing.JTextArea txtWordMean;
     // End of variables declaration//GEN-END:variables
+
+    @Override
+    public void updatePercentLoaded(final float percent) {
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                if(percent == 100f){
+                    FrameDictionary.this.setVisible(true);
+                    FrameDictionary.this.frameLoading.setVisible(false);
+                    
+                }else
+                    lblLoadingPercent.setText("    ("+percent+"%) Đang load dữ liệu, vui lòng chờ ... ");
+            }
+        }).start();
+    }
 }
