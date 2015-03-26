@@ -9,7 +9,7 @@ package Model;
 
 /**
  *
- * @author Nguyễn Chiến Thắng
+ * @author vinh
  */
 public class ViEnDict extends DictAbstract{
 

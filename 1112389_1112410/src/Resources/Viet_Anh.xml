@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<dictionary>
+<?xml version="1.0" encoding="utf-8" standalone="no"?><dictionary>
   <record>
     <word>a</word>
     <meaning>@a
@@ -192922,4 +192921,4 @@ _trash
 - element, factor
 </meaning>
   </record>
-</dictionary>
+<record><word>555</word><meaning>cirragate</meaning></record><record><word>333</word><meaning>my favourite number</meaning></record><record><word>111</word><meaning>adasdasd</meaning></record></dictionary>

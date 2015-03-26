@@ -8,7 +8,7 @@ package Model;
 
 /**
  *
- * @author Nguyễn Chiến Thắng
+ * @author vinh
  */
 public interface Updateable {
     void updatePercentLoaded(float percent);

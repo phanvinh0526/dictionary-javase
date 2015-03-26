@@ -7,8 +7,12 @@
 package Model;
 
 import App.ModelDictionary;
+import Frame.FrameDictionary;
 import java.io.File;
+import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.SortedMap;
@@ -17,17 +21,25 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  *
- * @author Nguyễn Chiến Thắng
+ * @author vinh
  */
 public abstract class DictAbstract {
-    protected String fileName;
+    private String fileName;
     
     //Danh sách từ
     SortedMap<String,String> listSorted = new TreeMap<String,String>();
@@ -39,10 +51,54 @@ public abstract class DictAbstract {
         this.fileName = fileName;
     }
     
+    // Append Dictionary Data
+    public void appendFile(ArrayList<WordObject> dataAppended) {
+        String fileUrl = fileName;
+        try {
+            DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+            Document document = documentBuilder.parse(fileUrl);
+            Element root = document.getDocumentElement();
+             // Root Element
+            Element rootElement = document.getDocumentElement();
+        
+            try {
+                for (WordObject i : dataAppended) {
+                    // server elements
+                    Element record = document.createElement("record");
+                    rootElement.appendChild(record);
+
+                    Element name = document.createElement("word");
+                    name.appendChild(document.createTextNode(i.getWord()));
+                    record.appendChild(name);
+
+                    Element port = document.createElement("meaning");
+                    port.appendChild(document.createTextNode(i.getMeaning()));
+                    record.appendChild(port);
+
+                    root.appendChild(record);
+                }
+                
+                DOMSource source = new DOMSource(document);
+                
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                Transformer transformer = transformerFactory.newTransformer();
+                StreamResult result = new StreamResult(fileUrl);
+                transformer.transform(source, result);
+                
+            } catch (DOMException | TransformerException ex) {
+                Logger.getLogger(ModelDictionary.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+        } catch (ParserConfigurationException | SAXException | IOException ex) {
+            Logger.getLogger(EnViDict.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
     
-    //Load dữ liệu
+    // oad Dictionary Data
     public void loadFile(Updateable update, int startPercent, int maxPercent){
-        File file = new File(this.fileName);
+        File file = new File(this.getFileName());
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory 
                .newInstance();
         DocumentBuilder documentBuilder;
@@ -102,5 +158,19 @@ public abstract class DictAbstract {
     //Lấy size
     public int size(){
         return listLinked.size();
+    }
+
+    /**
+     * @return the fileName
+     */
+    public String getFileName() {
+        return fileName;
+    }
+
+    /**
+     * @param fileName the fileName to set
+     */
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 }
