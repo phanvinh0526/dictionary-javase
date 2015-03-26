@@ -17,9 +17,15 @@ public class Main  {
     
     public static void main (String[] args){
         
-       FrameDictionary frame = new FrameDictionary();
+       //FrameDictionary frame = new FrameDictionary();
        
-       
+       /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new FrameDictionary();
+                
+            }
+        });
     }
     
     

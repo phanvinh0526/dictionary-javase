@@ -1,10 +1,10 @@
-hello world
-vina
+2D image
+phi
+phenomenon
+1-byte character string
+aasvogel
+1-byte character code
+2D configuration
 vinh
 uyen
-327
-555
-yếu tố
-333
-444
-111
+mu

@@ -37,14 +37,27 @@ import org.w3c.dom.NodeList;
  */
 public class ModelDictionary implements ListModel{
 
+    // URL
+    private final String URL                = "src/Resources/";
+    private final String viEn_URL           = URL+"Viet_Anh.xml";
+    private final String enVi_URL           = URL+"Anh_Viet.xml";
+    private final String lastWord_URL       = URL+"LastWordlist.txt";
+    private final String favouriteWord_URL  = URL+"FavouriteWordlist.txt";
+    
     private FrameDictionary frameDictionary;
-    private ViEnDict viEnDict = new ViEnDict("src/Resources/Viet_Anh.xml");
-    private EnViDict enViDict = new EnViDict("src/Resources/Anh_Viet.xml");
+    private ViEnDict viEnDict = new ViEnDict(viEn_URL);
+    private EnViDict enViDict = new EnViDict(enVi_URL);
     private ArrayList<String> listLastWord = new ArrayList<>();
     private ArrayList<String> listFavouriteWord = new ArrayList<>();
     private ArrayList<WordObject> enViDataAppanded = new ArrayList<>();
     private ArrayList<WordObject> viEnDataAppanded = new ArrayList<>();
     
+    public String getViEn_URL(){
+        return this.viEn_URL;
+    }
+    public String getEnVi_URL(){
+        return this.enVi_URL;
+    }
     public ArrayList<WordObject> getEnViDataAppanded(){
         return enViDataAppanded;
     }
@@ -128,12 +141,12 @@ public class ModelDictionary implements ListModel{
     }
     
     public void writeLastWordlist(ArrayList<String> listLastWord) {
-        writeTextFile("src/Resources/LastWordlist.txt", listLastWord);
+        writeTextFile(this.lastWord_URL, listLastWord);
     }
 
     public ArrayList<String> readLastWordlist(){
         try {
-            this.listLastWord = readTextFile("src/Resources/LastWordlist.txt");
+            this.listLastWord = readTextFile(this.lastWord_URL);
         } catch (IOException ex) {
             Logger.getLogger(ModelDictionary.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -143,7 +156,7 @@ public class ModelDictionary implements ListModel{
     public Map<String, WordObject> readFavouriteWordlist() {
         //Read File
         try {
-            this.listFavouriteWord = readTextFile("src/Resources/FavouriteWordlist.txt");
+            this.listFavouriteWord = readTextFile(this.favouriteWord_URL);
         } catch (IOException ex) {
             Logger.getLogger(ModelDictionary.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -162,7 +175,7 @@ public class ModelDictionary implements ListModel{
         for(String key : mapFavourite.keySet()){
             list.add(key);
         }
-        writeTextFile("src/Resources/FavouriteWordlist.txt", list);
+        writeTextFile(this.favouriteWord_URL, list);
     }
 
     private void writeTextFile(String fileUrl, ArrayList<String> list){

@@ -81,20 +81,27 @@ public class FrameDictionary extends javax.swing.JFrame implements Updateable{
         //Disable edit word mean
         txtWordMean.setEditable(false);
         //Load data
-        new Thread(new Runnable() {
+        Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
-               load("src/Resources/Viet_Anh.xml", 0, 50, listViEnSorted, modelViEn);
-               load("src/Resources/Anh_Viet.xml", 50, 50, listEnViSorted, modelEnVi);
+               String viEn_URL = modelDict.getViEn_URL();
+               String enVi_URL = modelDict.getEnVi_URL();
+               //Loading
+               load(viEn_URL, 0, 50, listViEnSorted, modelViEn);
+               load(enVi_URL, 50, 50, listEnViSorted, modelEnVi);
+               
                lstWords.setModel(modelEnVi);
                rdoAnhViet.setSelected(true);
                lstWords.ensureIndexIsVisible(50);
                lstWords.ensureIndexIsVisible(0);
+               
             }
-        }).start();
-        
-        
-        
+        });
+        thread.start();
+        if(thread.getState().toString().equals("TERMINATED")){
+         //Open MainFrame
+            this.setVisible(true);
+        }
     }
 
     /*  ---Functions---   */
